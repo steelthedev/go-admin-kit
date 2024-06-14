@@ -54,12 +54,23 @@ func (a *Admin) createHandler(name string, model interface{}) HandlerFunc {
 	return func(ctx Context) {
 		if err := ctx.Bind(model); err == nil {
 			if err := a.db.Create(model); err != nil {
-				ctx.HTML(http.StatusInternalServerError, "error.html", map[string]interface{}{"message": "An error occured", "error": err})
+				ctx.HTML(http.StatusInternalServerError, "error.html", AppError{Message: err.Error()})
 				return
 			}
 			ctx.Redirect(http.StatusFound, "/admin/"+name)
 		} else {
-			ctx.HTML(http.StatusInternalServerError, "error.html", map[string]interface{}{"message": "An error occured", "error": err})
+			ctx.HTML(http.StatusInternalServerError, "error.html", AppError{Message: err.Error()})
 		}
+	}
+}
+
+func (a *Admin) editHandler(name string, model interface{}) HandlerFunc {
+	return func(ctx Context) {
+		id := ctx.Param("id")
+		if err := a.db.FindByID(model, id); err != nil {
+			ctx.HTML(http.StatusNotFound, "form.html", AppError{Message: err.Error()})
+			return
+		}
+		ctx.HTML(http.StatusOK, "form.html", map[string]interface{}{"item": model, "action": "/admin/" + name + "/" + id, "method": "POST"})
 	}
 }
